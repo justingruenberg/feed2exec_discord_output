@@ -1,18 +1,21 @@
 import logging
 import time
 import json
+import pytz
 from bs4 import BeautifulSoup, Comment
 from pprint import pprint 
+from datetime import datetime
 
 def cleanup(markup):
     soup = BeautifulSoup(markup, "html.parser")
     begining_element = soup.find(string=lambda text:isinstance(text,Comment) and "SC_OFF" in text)
     return "".join([elem.get_text(separator="\n") for elem in begining_element.find_next_siblings('div')]).replace("View Poll", "").strip()
 
-
 def output(*args, feed=None, item=None, session=None, **kwargs):
     webhook_url = feed.get("webhook")
     post_user = feed.get("user", "quack")
+    tzstr = feed.get("timezone", "").strip()
+    tz = pytz.timezone(tzstr) if tzstr else pytz.utc
 
     if not webhook_url:
         logging.error("webhook not set in config, nowhere to post")
@@ -31,9 +34,9 @@ def output(*args, feed=None, item=None, session=None, **kwargs):
     else:
         image = ""
 
-    published = item.get("published_parsed")
-    published_str = time.strftime("%B %d, %Y at %I:%M %p", published)
-    reddit = item["tags"][0]["label"]
+    published = datetime.fromtimestamp(time.mktime(item.get("published_parsed")))
+    published_str = published.replace(tzinfo=pytz.utc).astimezone(tz).strftime("%B %d, %Y at %I:%M %p")
+    redditsub = item["tags"][0]["label"]
     
     summary = item.get("summary", "")
     if "SC_OFF" not in summary:
@@ -53,9 +56,8 @@ def output(*args, feed=None, item=None, session=None, **kwargs):
             "description": summary,
             "url": url,
             "footer": {
-                "text": f"{reddit} • Posted at {published_str}"
+                "text": f"{redditsub} • Posted at {published_str}"
             }
-
         }]
     }
 
