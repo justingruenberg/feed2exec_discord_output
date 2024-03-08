@@ -1,21 +1,14 @@
 import logging
 import time
 import json
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 from pprint import pprint 
 
-def cleanup(html):
-    # parse html content
-    soup = BeautifulSoup(html, "html.parser")
- 
-    for data in soup(['style', 'script']):
-        # Remove tags
-        data.decompose()
- 
-    # return data by retrieving the tag content
-    output = ' '.join(list(soup.stripped_strings)[:-4])
-    output = output.replace("View Poll", "").strip()
-    return output
+def cleanup(markup):
+    soup = BeautifulSoup(markup, "html.parser")
+    begining_element = soup.find(string=lambda text:isinstance(text,Comment) and "SC_OFF" in text)
+    return "".join([elem.get_text(separator="\n") for elem in begining_element.find_next_siblings('div')]).replace("View Poll", "").strip()
+
 
 def output(*args, feed=None, item=None, session=None, **kwargs):
     webhook_url = feed.get("webhook")
