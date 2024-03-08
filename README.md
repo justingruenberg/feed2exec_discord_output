@@ -35,6 +35,7 @@ Just a [feed2exec](https://feed2exec.readthedocs.io/en/stable/) plugin hacked to
   - ```output=discord_output```
   - ```webhook=<webhook url from discord>``` 
   - ```user=<display username>``` (optional, omiting this will use whatever is configured in the webhook).
+  - ```timezone=<tz str>``` (optional) timezone string that ```pytz.timezone``` will accept.
 
 - Setup Crontab
 
