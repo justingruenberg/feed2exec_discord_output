@@ -2,9 +2,10 @@ import logging
 import time
 import json
 import pytz
-from bs4 import BeautifulSoup, Comment
 from pprint import pprint 
 from datetime import datetime
+from urllib.parse import urljoin, urlparse
+from bs4 import BeautifulSoup, Comment
 
 def cleanup(markup):
     soup = BeautifulSoup(markup, "html.parser")
@@ -50,7 +51,7 @@ def output(*args, feed=None, item=None, session=None, **kwargs):
             "color": 16729344,
             "author": {
                 "name": author,
-                "url": author_link
+                "url": author_link,
             },
             "title": title,
             "description": summary,
@@ -60,6 +61,17 @@ def output(*args, feed=None, item=None, session=None, **kwargs):
             }
         }]
     }
+
+    r = session.get(f"https://www.reddit.com/user/{author[3:]}/about.json")
+
+    if r.ok:
+        avatar = r.json()['data'].get("icon_img", None)
+        logging.debug(f"requested avatar returned {avatar}")
+        
+        if avatar:
+            post["embeds"][0]["author"]["icon_url"] = urljoin(avatar, urlparse(avatar).path)
+    else:
+        logging.error(f"request for profile failed with code {r.status_code} and content {r.content}")
 
     if image:
         post["embeds"][0]["image"] = {"url": image}
